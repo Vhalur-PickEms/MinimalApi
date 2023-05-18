@@ -5,6 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddCors();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DataContext>(options => options.UseMySQL(builder.Configuration.GetConnectionString("DefaultCon")));
@@ -77,6 +78,15 @@ static async Task<IResult> DeleteTeam(int id, DataContext db)
     return TypedResults.NotFound();
 }
 
+app.UseCors(options =>
+     options.WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+
+app.UseCors(options =>
+     options.WithOrigins("http://localhost:7020")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
 app.Run();
 
 #region Old code
