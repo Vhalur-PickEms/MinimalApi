@@ -31,11 +31,19 @@ teams.MapPut("/{id}", UpdateTeam);
 teams.MapDelete("/{id}", DeleteTeam);
 
 match.MapGet("/", GetAllMatches);
+match.MapPost("/", CreateMatch);
 
 
 static async Task<IResult> GetAllMatches(DataContext db)
 {
     return TypedResults.Ok(await db.Match.ToArrayAsync());
+}
+
+static async Task<IResult> CreateMatch(Match match, DataContext db)
+{
+    db.Match.Add(match);
+    await db.SaveChangesAsync();
+    return TypedResults.Created($"/GetTeamByID/{match.Id}", match);
 }
 
 static async Task<IResult> GetAllTeams(DataContext db)
