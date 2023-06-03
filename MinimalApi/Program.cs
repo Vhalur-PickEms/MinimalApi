@@ -21,6 +21,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Code
 var teams = app.MapGroup("/Teams");
 var match = app.MapGroup("/Match");
 
