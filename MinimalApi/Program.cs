@@ -20,6 +20,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.MapGet("/", () => "Hello World!");
 
 var teams = app.MapGroup("/Teams");
 var match = app.MapGroup("/Match");
@@ -96,6 +97,8 @@ app.UseCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod());
 app.Run();
+
+public partial class Program { }
 
 #region Old code
 //app.MapGet("/GetAllTeams", async (DataContext context) => await context.Team.ToListAsync<Team>());
