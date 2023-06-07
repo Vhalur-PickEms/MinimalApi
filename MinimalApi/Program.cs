@@ -66,7 +66,7 @@ static async Task<IResult> CreateTeam(Team team, DataContext db)
 
 static async Task<IResult> UpdateTeam(int id, Team inputTeam, DataContext db)
 {
-    Team team = await db.Team.FindAsync(id);
+    Team team = await db.Team.FindAsync(id) ?? throw new ArgumentException(nameof(team));
     if (team is null) return TypedResults.NotFound();  
 
     team.Name = inputTeam.Name;
