@@ -27,6 +27,7 @@ public class UnitTest1
             Assert.Equal("G2", team1.Name);
             Assert.Null(team1.LogoUrl);
         });
+
     }
 
     [Fact]
