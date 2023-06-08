@@ -22,6 +22,7 @@ jobs:
 
   build-sonarcloud:
     name: Build and analyze
+    needs: [build-dotnet]
     runs-on: windows-latest
 
     steps:
@@ -64,7 +65,7 @@ jobs:
           
   push-to-registry:
     name: Push Docker image to Docker Hub
-    needs: [build-dotnet, build-sonarcloud]
+    needs: [build-sonarcloud]
     runs-on: ubuntu-latest
 
     steps:
