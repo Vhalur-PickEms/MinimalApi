@@ -20,6 +20,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.MapGet("/", () => "Hello World!");
 
 var teams = app.MapGroup("/Teams");
 var match = app.MapGroup("/Match");
@@ -65,7 +66,7 @@ static async Task<IResult> CreateTeam(Team team, DataContext db)
 
 static async Task<IResult> UpdateTeam(int id, Team inputTeam, DataContext db)
 {
-    Team team = await db.Team.FindAsync(id);
+    Team team = await db.Team.FindAsync(id) ?? throw new ArgumentException(nameof(team));
     if (team is null) return TypedResults.NotFound();  
 
     team.Name = inputTeam.Name;
@@ -97,44 +98,4 @@ app.UseCors(options =>
             .AllowAnyMethod());
 app.Run();
 
-#region Old code
-//app.MapGet("/GetAllTeams", async (DataContext context) => await context.Team.ToListAsync<Team>());
-//app.MapGet("/GetTeamByID/{id}", async (int id, DataContext db) => await db.Team.FindAsync(id)
-//is Team team ? Results.Ok(team) : Results.NotFound());
-
-//app.MapPost("/CreateTeam", async (Team team, DataContext db) =>
-//{
-//    db.Team.Add(team);
-//    await db.SaveChangesAsync();
-
-//    return Results.Created($"/GetTeamByID/{team.Id}", team);
-//});
-
-//app.MapPut("/EditTeam/{id}", async (int id, Team inputTeam, DataContext db) => 
-//{
-//    var team = await db.Team.FindAsync(id);
-//    if (team is null) return Results.NotFound();
-
-//    team.Name = inputTeam.Name;
-//    team.LogoUrl = inputTeam.LogoUrl;
-
-//    await db.SaveChangesAsync();
-
-//    return Results.Created($"/GetTeamByID/{team.Id}", team);
-
-//});
-
-//app.MapDelete("/DeleteTeam/{id}", async (int id, DataContext db) =>
-//{
-//    if (await db.Team.FindAsync(id) is Team team)
-//    {
-//        db.Team.Remove(team);
-//        await db.SaveChangesAsync();
-//        return Results.Ok(team);
-//    }
-
-//    return Results.NotFound();
-//});
-#endregion
-
-
+public partial class Program { }
