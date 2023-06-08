@@ -1,7 +1,9 @@
 name: Mega CI/CD
 on:
-  pull_request:
-    branches: ["Main", "dev", "new-CI/CD"]
+  push:
+    branches:
+      - '*'
+      
 
 jobs:
   build-dotnet:
@@ -67,6 +69,8 @@ jobs:
     name: Push Docker image to Docker Hub
     needs: [build-sonarcloud]
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.ref == 'refs/heads/main'
+
 
     steps:
       - name: Check out the repo
