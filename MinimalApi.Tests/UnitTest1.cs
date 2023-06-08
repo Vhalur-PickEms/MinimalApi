@@ -28,4 +28,11 @@ public class UnitTest1
             Assert.Null(team1.LogoUrl);
         });
     }
+
+    [Fact]
+    public void Test()
+    {
+        int i = 5;
+        Assert.Equal(5, i);
+    }
 }
