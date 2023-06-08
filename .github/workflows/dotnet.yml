@@ -1,4 +1,3 @@
-name: Mega CI/CD
 on:
   push:
     branches:
