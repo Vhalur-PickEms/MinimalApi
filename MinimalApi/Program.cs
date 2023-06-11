@@ -1,8 +1,15 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MinimalApi;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using System.Security.Cryptography;
+using System;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,6 +67,7 @@ builder.Services.AddAuthorization(o =>
         .RequireAuthenticatedUser()
         .RequireClaim("scope", "team:read-write"));
 });
+
 
 var app = builder.Build();
 
