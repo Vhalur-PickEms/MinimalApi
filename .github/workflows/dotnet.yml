@@ -67,7 +67,8 @@ jobs:
     name: Push Docker image to Docker Hub
     needs: [build-sonarcloud]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+
 
 
     steps:
