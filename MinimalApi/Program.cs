@@ -64,8 +64,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization(o =>
 {
     o.AddPolicy("team:read-write", p => p
-        .RequireAuthenticatedUser()
-        .RequireClaim("scope", "team:read-write"));
+        .RequireAuthenticatedUser());
+        //.RequireClaim("scope", "team:read-write"));
 });
 
 
