@@ -44,6 +44,8 @@ builder.Services.AddSwaggerGen(c =>
             }
         });
 });
+
+//builder.Services.AddDbContext<DataContext>(options => options.UseMySQL(builder.Configuration.GetConnectionString("DefaultCon")));
 builder.Services.AddDbContext<DataContext>(options => options.UseMySQL(builder.Configuration.GetConnectionString("DefaultCon")));
 
 IdentityModelEventSource.ShowPII = true;
