@@ -1,5 +1,15 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Logging;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using MinimalApi;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using System.Security.Cryptography;
+using System;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,8 +17,59 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddCors();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                new string[] {}
+            }
+        });
+});
+
+//builder.Services.AddDbContext<DataContext>(options => options.UseMySQL(builder.Configuration.GetConnectionString("DefaultCon")));
 builder.Services.AddDbContext<DataContext>(options => options.UseMySQL(builder.Configuration.GetConnectionString("DefaultCon")));
+
+IdentityModelEventSource.ShowPII = true;
+
+// Configure authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, c =>
+    {
+        c.Authority = $"https://{builder.Configuration["Auth0:Domain"]}";
+        c.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidAudience = builder.Configuration["Auth0:Audience"],
+            ValidIssuer = $"{builder.Configuration["Auth0:Domain"]}"
+        };
+    });
+
+// Configure authorization
+builder.Services.AddAuthorization(o =>
+{
+    o.AddPolicy("team:read-write", p => p
+        .RequireAuthenticatedUser());
+        //.RequireClaim("scope", "team:read-write"));
+});
+
 
 var app = builder.Build();
 
@@ -16,75 +77,37 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+    });
 }
 
 app.UseHttpsRedirection();
 
-var teams = app.MapGroup("/Teams");
-var match = app.MapGroup("/Match");
+app.UseRouting();
 
-teams.MapGet("/", GetAllTeams);
-teams.MapGet("/{id}", GetTeamById);
-teams.MapPost("/", CreateTeam);
-teams.MapPut("/{id}", UpdateTeam);
-teams.MapDelete("/{id}", DeleteTeam);
+app.UseCors(options =>
+    options.WithOrigins("http://localhost:5173")
+        .AllowAnyHeader()
+        .AllowAnyMethod());
 
-match.MapGet("/", GetAllMatches);
-match.MapPost("/", CreateMatch);
+app.UseCors(options =>
+    options.WithOrigins("http://localhost:7020")
+        .AllowAnyHeader()
+        .AllowAnyMethod());
 
 
-static async Task<IResult> GetAllMatches(DataContext db)
-{
-    return TypedResults.Ok(await db.Match.ToArrayAsync());
-}
 
-static async Task<IResult> CreateMatch(Match match, DataContext db)
-{
-    db.Match.Add(match);
-    await db.SaveChangesAsync();
-    return TypedResults.Created($"/GetTeamByID/{match.Id}", match);
-}
+app.UseAuthentication();
+app.UseAuthorization();
 
-static async Task<IResult> GetAllTeams(DataContext db)
-{
-    return TypedResults.Ok(await db.Team.ToArrayAsync());
-}
+app.MapGroup("Team")
+    .MapTeamApi()
+    .RequireAuthorization("team:read-write");
 
-static async Task<IResult> GetTeamById(int id, DataContext db)
-{
-    return await db.Team.FindAsync(id) is Team team ? TypedResults.Ok(team) : TypedResults.NotFound();
-}
-
-static async Task<IResult> CreateTeam(Team team, DataContext db)
-{
-    db.Team.Add(team);
-    await db.SaveChangesAsync();
-    return TypedResults.Created($"/GetTeamByID/{team.Id}", team);
-}
-
-static async Task<IResult> UpdateTeam(int id, Team inputTeam, DataContext db)
-{
-    Team team = await db.Team.FindAsync(id);
-    if (team is null) return TypedResults.NotFound();  
-
-    team.Name = inputTeam.Name;
-    team.LogoUrl = inputTeam.LogoUrl;
-
-    await db.SaveChangesAsync();
-    return TypedResults.Created($"/GetTeamByID/{team.Id}", team);
-}
-
-static async Task<IResult> DeleteTeam(int id, DataContext db)
-{
-    if (await db.Team.FindAsync(id) is Team team)
-    {
-        db.Team.Remove(team);
-        await db.SaveChangesAsync();
-        return TypedResults.Ok(team);
-    }
-    return TypedResults.NotFound();
-}
+#region Startup
+app.UseHttpsRedirection();
 
 app.UseCors(options =>
      options.WithOrigins("http://localhost:5173")
@@ -95,46 +118,9 @@ app.UseCors(options =>
      options.WithOrigins("http://localhost:7020")
             .AllowAnyHeader()
             .AllowAnyMethod());
-app.Run();
 
-#region Old code
-//app.MapGet("/GetAllTeams", async (DataContext context) => await context.Team.ToListAsync<Team>());
-//app.MapGet("/GetTeamByID/{id}", async (int id, DataContext db) => await db.Team.FindAsync(id)
-//is Team team ? Results.Ok(team) : Results.NotFound());
-
-//app.MapPost("/CreateTeam", async (Team team, DataContext db) =>
-//{
-//    db.Team.Add(team);
-//    await db.SaveChangesAsync();
-
-//    return Results.Created($"/GetTeamByID/{team.Id}", team);
-//});
-
-//app.MapPut("/EditTeam/{id}", async (int id, Team inputTeam, DataContext db) => 
-//{
-//    var team = await db.Team.FindAsync(id);
-//    if (team is null) return Results.NotFound();
-
-//    team.Name = inputTeam.Name;
-//    team.LogoUrl = inputTeam.LogoUrl;
-
-//    await db.SaveChangesAsync();
-
-//    return Results.Created($"/GetTeamByID/{team.Id}", team);
-
-//});
-
-//app.MapDelete("/DeleteTeam/{id}", async (int id, DataContext db) =>
-//{
-//    if (await db.Team.FindAsync(id) is Team team)
-//    {
-//        db.Team.Remove(team);
-//        await db.SaveChangesAsync();
-//        return Results.Ok(team);
-//    }
-
-//    return Results.NotFound();
-//});
 #endregion
 
+app.Run();
 
+public partial class Program { }
